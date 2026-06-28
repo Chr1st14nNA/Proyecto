@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iniciar Sesión — TechShop</title>
+  <meta name="description" content="Inicia sesión o regístrate en TechShop, la mejor tienda en línea."/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    .auth-card {
+      width: 100%; max-width: 440px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(20px);
+      padding: 2.5rem;
+      box-shadow: var(--shadow), var(--shadow-accent);
+      position: relative; z-index: 1;
+    }
+    .auth-logo {
+      text-align: center; margin-bottom: 2rem;
+    }
+    .auth-logo .logo-text {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .auth-logo .logo-sub {
+      font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.3rem;
+    }
+    .tabs {
+      display: flex; background: rgba(255,255,255,0.05);
+      border-radius: var(--radius-sm); padding: 4px;
+      margin-bottom: 2rem;
+    }
+    .tab-btn {
+      flex: 1; padding: 0.6rem;
+      background: transparent; border: none;
+      color: var(--text-secondary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; border-radius: 6px;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: #fff;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .password-wrapper { position: relative; }
+    .password-wrapper .toggle-pass {
+      position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 1rem; padding: 0;
+    }
+    .divider-text {
+      text-align: center; color: var(--text-muted);
+      font-size: 0.8rem; margin: 1.2rem 0;
+      position: relative;
+    }
+    .divider-text::before, .divider-text::after {
+      content: ''; position: absolute; top: 50%;
+      width: 42%; height: 1px;
+      background: var(--border-glass);
+    }
+    .divider-text::before { left: 0; }
+    .divider-text::after  { right: 0; }
+    .back-home { text-align: center; margin-top: 1.2rem; }
+    .back-home a { color: var(--accent-light); font-size: 0.85rem; text-decoration: none; }
+    .back-home a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-text">🛒 TechShop</div>
+      <div class="logo-sub">Tu tienda de confianza en línea</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login-btn" onclick="switchTab('login')">Iniciar Sesión</button>
+      <button class="tab-btn" id="tab-register-btn" onclick="switchTab('register')">Crear Cuenta</button>
+    </div>
+
+    <!-- Panel Login -->
+    <div class="tab-panel active" id="panel-login">
+      <div id="login-alert"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">📧 Correo Electrónico</label>
+          <input type="email" id="login-email" class="form-control" placeholder="correo@ejemplo.com" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">🔑 Contraseña</label>
+          <div class="password-wrapper">
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required/>
+            <button type="button" class="toggle-pass" onclick="togglePass('login-password', this)">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-login">
+          Iniciar Sesión
+        </button>
+      </form>
+      <div class="divider-text">¿No tienes cuenta?</div>
+      <button class="btn btn-secondary btn-full" onclick="switchTab('register')">Crear una cuenta gratis</button>
+    </div>
+
+    <!-- Panel Registro -->
+    <div class="tab-panel" id="panel-register">
+      <div id="register-alert"></div>
+      <form id="register-form">
+        <div class="form-group">
+          <label class="form-label" for="reg-nombre">👤 Nombre Completo</label>
+          <input type="text" id="reg-nombre" class="form-control" placeholder="Tu nombre completo" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">📧 Correo Electrónico</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="correo@ejemplo.com" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-telefono">📱 Teléfono (opcional)</label>
+          <input type="tel" id="reg-telefono" class="form-control" placeholder="(664) 123-4567"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">🔑 Contraseña</label>
+          <div class="password-wrapper">
+            <input type="password" id="reg-password" class="form-control" placeholder="Mínimo 6 caracteres" required minlength="6"/>
+            <button type="button" class="toggle-pass" onclick="togglePass('reg-password', this)">👁</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-confirm">🔑 Confirmar Contraseña</label>
+          <input type="password" id="reg-confirm" class="form-control" placeholder="Repite tu contraseña" required/>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-register">
+          Crear Cuenta
+        </button>
+      </form>
+    </div>
+
+    <div class="back-home">
+      <a href="/">← Volver a la tienda</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // Si ya está logueado, redirigir
+  if (isLoggedIn()) window.location.href = '/';
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${tab}-btn`).classList.add('active');
+    document.getElementById(`panel-${tab}`).classList.add('active');
+  }
+
+  function togglePass(id, btn) {
+    const el = document.getElementById(id);
+    if (el.type === 'password') { el.type = 'text'; btn.textContent = '🙈'; }
+    else { el.type = 'password'; btn.textContent = '👁'; }
+  }
+
+  function showAlert(containerId, msg, type='danger') {
+    document.getElementById(containerId).innerHTML =
+      `<div class="alert alert-${type}"><span>${type==='danger'?'⚠':'✓'}</span><span>${msg}</span></div>`;
+  }
+
+  // ── Login ──────────────────────────────────────────────────
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    btn.textContent = 'Ingresando...'; btn.disabled = true;
+
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: document.getElementById('login-email').value.trim(),
+          password: document.getElementById('login-password').value
+        })
+      });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      showToast('¡Bienvenido de vuelta, ' + data.user.nombre.split(' ')[0] + '!', 'success');
+      setTimeout(() => window.location.href = '/', 800);
+    } catch (err) {
+      showAlert('login-alert', err.message);
+      btn.textContent = 'Iniciar Sesión'; btn.disabled = false;
+    }
+  });
+
+  // ── Registro ───────────────────────────────────────────────
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register');
+    const pass = document.getElementById('reg-password').value;
+    const conf = document.getElementById('reg-confirm').value;
+
+    if (pass !== conf) {
+      showAlert('register-alert', 'Las contraseñas no coinciden.');
+      return;
+    }
+
+    btn.textContent = 'Registrando...'; btn.disabled = true;
+
+    try {
+      const data = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre:   document.getElementById('reg-nombre').value.trim(),
+          email:    document.getElementById('reg-email').value.trim(),
+          password: pass,
+          telefono: document.getElementById('reg-telefono').value.trim()
+        })
+      });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      showAlert('register-alert', '¡Cuenta creada exitosamente!', 'success');
+      setTimeout(() => window.location.href = '/', 1000);
+    } catch (err) {
+      showAlert('register-alert', err.message);
+      btn.textContent = 'Crear Cuenta'; btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

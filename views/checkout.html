@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout — TechShop</title>
+  <meta name="description" content="Finaliza tu compra en TechShop con envío a domicilio."/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    .checkout-page { padding: 3rem 0 5rem; }
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
+      align-items: start;
+    }
+    .checkout-section {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-label {
+      font-size: 1rem; font-weight: 800;
+      margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .order-item {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-item .oi-emoji { font-size: 2rem; }
+    .order-item .oi-info { flex: 1; }
+    .order-item .oi-name { font-weight: 600; font-size: 0.9rem; }
+    .order-item .oi-qty { font-size: 0.8rem; color: var(--text-secondary); }
+    .order-item .oi-price { font-weight: 700; color: var(--accent-light); }
+    .summary-total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 0 0;
+      border-top: 1px solid var(--border-glass);
+      margin-top: 0.5rem;
+    }
+    .summary-total-row .label { font-weight: 700; font-size: 1.1rem; }
+    .summary-total-row .amount {
+      font-size: 1.4rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .success-overlay {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: rgba(10,10,18,0.92);
+      align-items: center; justify-content: center;
+    }
+    .success-overlay.show { display: flex; }
+    .success-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      padding: 3rem;
+      text-align: center;
+      max-width: 420px; width: 90%;
+      animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: none; opacity: 1; } }
+    .success-box .icon { font-size: 5rem; margin-bottom: 1rem; }
+    .success-box h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .success-box p { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    @media(max-width:768px) {
+      .checkout-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/" class="navbar-brand">🛒 Tech<span>Shop</span></a>
+  <ul class="navbar-nav" id="nav-auth"></ul>
+</nav>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-box">
+    <div class="icon">🎉</div>
+    <h2>¡Compra Realizada!</h2>
+    <p>Tu pedido ha sido confirmado y será enviado a tu domicilio pronto.</p>
+    <p id="success-order-id" style="color:var(--accent-light); font-weight:700; margin-bottom:1.5rem;"></p>
+    <div style="display:flex; flex-direction:column; gap:0.8rem;">
+      <a href="/perfil" class="btn btn-primary btn-full">Ver mis Pedidos</a>
+      <a href="/" class="btn btn-secondary btn-full">Seguir Comprando</a>
+    </div>
+  </div>
+</div>
+
+<div class="container checkout-page">
+  <h1 class="section-title">💳 Finalizar Compra</h1>
+  <p class="section-subtitle">Completa tu información de envío para confirmar el pedido.</p>
+
+  <div id="checkout-container">
+    <div class="loader"><div class="spinner"></div><span>Cargando...</span></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  const productEmojis = { 1: '💻', 2: '👗', 3: '🏠', 4: '⚽', 5: '📚' };
+  let cartData = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    requireAuth();
+    renderNavbar();
+    try {
+      cartData = await authFetch('/cart');
+      if (cartData.items.length === 0) {
+        document.getElementById('checkout-container').innerHTML =
+          `<div class="empty-cart" style="text-align:center; padding:4rem 0;">
+            <div style="font-size:4rem">🛒</div>
+            <h2>Tu carrito está vacío</h2>
+            <a href="/" class="btn btn-primary mt-2">Ir al catálogo</a>
+          </div>`;
+        return;
+      }
+      renderCheckout();
+    } catch(e) { showToast('Error cargando el carrito', 'error'); }
+  });
+
+  function renderCheckout() {
+    const itemsHtml = cartData.items.map(item => `
+      <div class="order-item">
+        <div class="oi-emoji">${productEmojis[item.category_id] || '📦'}</div>
+        <div class="oi-info">
+          <div class="oi-name">${item.nombre}</div>
+          <div class="oi-qty">x${item.cantidad} — ${formatPrice(item.precio)} c/u</div>
+        </div>
+        <div class="oi-price">${formatPrice(item.subtotal)}</div>
+      </div>`).join('');
+
+    document.getElementById('checkout-container').innerHTML = `
+      <div class="checkout-grid">
+        <div>
+          <!-- Datos de envío -->
+          <div class="checkout-section">
+            <div class="section-label">📍 Dirección de Envío</div>
+            <form id="checkout-form">
+              <div class="form-group">
+                <label class="form-label" for="direccion">Calle y número</label>
+                <input type="text" id="direccion" class="form-control" placeholder="Ej. Av. Insurgentes 1234, Col. Centro" required/>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="ciudad">Ciudad</label>
+                  <input type="text" id="ciudad" class="form-control" placeholder="Ciudad" required/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cp">Código Postal</label>
+                  <input type="text" id="cp" class="form-control" placeholder="22000" maxlength="5"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="tel-envio">Teléfono de contacto</label>
+                <input type="tel" id="tel-envio" class="form-control" placeholder="(664) 123-4567"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="notas">Notas adicionales (opcional)</label>
+                <textarea id="notas" class="form-control" rows="2" placeholder="Instrucciones especiales de entrega..."></textarea>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Resumen del pedido -->
+        <div class="checkout-section" style="position:sticky; top:90px;">
+          <div class="section-label">🧾 Tu Pedido</div>
+          ${itemsHtml}
+          <div class="summary-total-row">
+            <span class="label">Total a pagar</span>
+            <span class="amount">${formatPrice(cartData.total)}</span>
+          </div>
+          <div style="margin-top:1.5rem; padding:1rem; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:var(--radius-sm);">
+            <p style="font-size:0.82rem; color:#6ee7b7; text-align:center;">🔒 Pago seguro — Información protegida por cifrado SSL</p>
+          </div>
+          <button class="btn btn-primary btn-full btn-lg mt-2" id="btn-checkout" onclick="submitOrder()">
+            ✓ Confirmar Compra
+          </button>
+          <a href="/carrito" class="btn btn-secondary btn-full mt-1">← Regresar al Carrito</a>
+        </div>
+      </div>`;
+  }
+
+  async function submitOrder() {
+    const direccion = document.getElementById('direccion').value.trim();
+    const ciudad    = document.getElementById('ciudad').value.trim();
+    const cp        = document.getElementById('cp').value.trim();
+    const tel       = document.getElementById('tel-envio').value.trim();
+    const notas     = document.getElementById('notas').value.trim();
+
+    if (!direccion || !ciudad) {
+      showToast('Completa la dirección de envío', 'error');
+      return;
+    }
+    const btn = document.getElementById('btn-checkout');
+    btn.textContent = 'Procesando...'; btn.disabled = true;
+
+    try {
+      const result = await authFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({ direccion_envio: direccion, ciudad, codigo_postal: cp, telefono_envio: tel, notas })
+      });
+      document.getElementById('success-order-id').textContent = `Pedido #${result.orderId} — ${formatPrice(result.total)}`;
+      document.getElementById('success-overlay').classList.add('show');
+      updateCartBadge();
+    } catch(err) {
+      showToast(err.message, 'error');
+      btn.textContent = '✓ Confirmar Compra'; btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

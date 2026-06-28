@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechShop — Tienda en Línea</title>
+  <meta name="description" content="Descubre los mejores productos tecnológicos, ropa, hogar y más en TechShop. ¡Compra fácil, rápido y seguro!"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    .hero {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.1));
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .hero-badges {
+      display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .hero-badge {
+      font-size: 0.78rem; font-weight: 600;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+    }
+    .categories-strip {
+      display: flex; gap: 0.8rem; overflow-x: auto;
+      padding: 1.5rem 0;
+      scrollbar-width: none;
+    }
+    .categories-strip::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      flex-shrink: 0;
+      padding: 0.5rem 1.2rem;
+      border-radius: 100px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .cat-chip:hover, .cat-chip.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: #fff; border-color: transparent;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+    .page-section { padding: 2rem 0 4rem; }
+    .product-card .add-btn {
+      margin-top: 0.8rem; width: 100%;
+    }
+    .empty-state {
+      text-align: center; padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">🛒 Tech<span>Shop</span></a>
+  <ul class="navbar-nav" id="nav-auth"></ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <h1>La tienda que <span class="gradient-text">te entiende</span></h1>
+    <p>Tecnología, moda, hogar y más — todo en un solo lugar. Envío a domicilio a todo México.</p>
+    <div style="display:flex; justify-content:center; gap:1rem; flex-wrap:wrap;">
+      <a href="#productos" class="btn btn-primary btn-lg">Explorar Productos</a>
+      <a href="/login" class="btn btn-secondary btn-lg" id="hero-login-btn">Crear Cuenta Gratis</a>
+    </div>
+    <div class="hero-badges">
+      <span class="hero-badge">🚚 Envío a domicilio</span>
+      <span class="hero-badge">🔒 Pago seguro</span>
+      <span class="hero-badge">↩️ Devoluciones fáciles</span>
+      <span class="hero-badge">⭐ Calidad garantizada</span>
+    </div>
+  </div>
+</section>
+
+<!-- Contenido principal -->
+<div class="container page-section" id="productos">
+
+  <!-- Filtros -->
+  <div class="filters-bar">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" class="form-control" placeholder="Buscar productos..."/>
+    </div>
+    <select id="sort-select" class="form-control" style="width:auto; min-width:160px;">
+      <option value="">Relevancia</option>
+      <option value="price_asc">Precio: menor a mayor</option>
+      <option value="price_desc">Precio: mayor a menor</option>
+      <option value="name">Nombre A–Z</option>
+    </select>
+    <select id="price-max" class="form-control" style="width:auto; min-width:150px;">
+      <option value="">Cualquier precio</option>
+      <option value="500">Hasta $500</option>
+      <option value="1000">Hasta $1,000</option>
+      <option value="3000">Hasta $3,000</option>
+      <option value="8000">Hasta $8,000</option>
+      <option value="15000">Hasta $15,000</option>
+    </select>
+  </div>
+
+  <!-- Chips de categorías -->
+  <div class="categories-strip" id="categories-strip">
+    <span class="cat-chip active" onclick="filterCategory(null, this)">🏠 Todos</span>
+  </div>
+
+  <!-- Grid de productos -->
+  <div id="products-container">
+    <div class="loader"><div class="spinner"></div><span>Cargando productos...</span></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  let currentCategory = null;
+  let searchTimeout = null;
+
+  // Init
+  document.addEventListener('DOMContentLoaded', () => {
+    renderNavbar();
+    loadCategories();
+    loadProducts();
+    if (isLoggedIn()) {
+      document.getElementById('hero-login-btn')?.remove();
+    }
+
+    document.getElementById('search-input').addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadProducts, 400);
+    });
+    document.getElementById('sort-select').addEventListener('change', loadProducts);
+    document.getElementById('price-max').addEventListener('change', loadProducts);
+  });
+
+  async function loadCategories() {
+    try {
+      const cats = await apiFetch('/products/categories/all');
+      const strip = document.getElementById('categories-strip');
+      const emojis = { 'Electrónica': '💻', 'Ropa': '👗', 'Hogar': '🏠', 'Deportes': '⚽', 'Libros': '📚' };
+      cats.forEach(cat => {
+        const chip = document.createElement('span');
+        chip.className = 'cat-chip';
+        chip.textContent = `${emojis[cat.nombre] || '📦'} ${cat.nombre}`;
+        chip.onclick = () => filterCategory(cat.id, chip);
+        strip.appendChild(chip);
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  function filterCategory(id, el) {
+    currentCategory = id;
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadProducts();
+  }
+
+  async function loadProducts() {
+    const container = document.getElementById('products-container');
+    container.innerHTML = '<div class="loader"><div class="spinner"></div><span>Cargando...</span></div>';
+
+    const search   = document.getElementById('search-input').value.trim();
+    const sort     = document.getElementById('sort-select').value;
+    const maxPrice = document.getElementById('price-max').value;
+
+    const params = new URLSearchParams();
+    if (currentCategory) params.set('category', currentCategory);
+    if (search)    params.set('search', search);
+    if (sort)      params.set('sort', sort);
+    if (maxPrice)  params.set('maxPrice', maxPrice);
+
+    try {
+      const products = await apiFetch(`/products?${params}`);
+      if (products.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            <h3>No encontramos productos</h3>
+            <p class="text-muted mt-1">Intenta con otros filtros o términos de búsqueda.</p>
+          </div>`;
+        return;
+      }
+      container.innerHTML = `<div class="products-grid">${products.map(renderProductCard).join('')}</div>`;
+    } catch(e) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Error cargando productos.</p></div>`;
+    }
+  }
+
+  const productEmojis = { 1: '💻', 2: '👗', 3: '🏠', 4: '⚽', 5: '📚' };
+
+  function renderProductCard(p) {
+    const stockClass = p.stock === 0 ? 'out' : p.stock < 5 ? 'low' : '';
+    const stockLabel = p.stock === 0 ? 'Agotado' : p.stock < 5 ? `Últimas ${p.stock}` : `${p.stock} disponibles`;
+    const emoji = productEmojis[p.category_id] || '📦';
+    return `
+      <div class="card product-card" onclick="window.location='/producto?id=${p.id}'">
+        <div class="product-image" style="font-size:5rem; display:flex; align-items:center; justify-content:center; height:200px;">
+          ${emoji}
+        </div>
+        <div class="product-body">
+          <div class="product-category">${p.categoria || 'General'}</div>
+          <div class="product-name">${p.nombre}</div>
+          <div class="product-desc">${p.descripcion || ''}</div>
+          <div class="product-footer">
+            <div class="product-price">${formatPrice(p.precio)}</div>
+            <span class="stock-badge ${stockClass}">${stockLabel}</span>
+          </div>
+          <button class="btn btn-primary btn-sm add-btn" onclick="addToCart(event, ${p.id})" ${p.stock===0?'disabled':''}>
+            ${p.stock===0 ? 'Agotado' : '+ Agregar al Carrito'}
+          </button>
+        </div>
+      </div>`;
+  }
+
+  async function addToCart(e, productId) {
+    e.stopPropagation();
+    if (!isLoggedIn()) {
+      showToast('Inicia sesión para agregar al carrito', 'error');
+      setTimeout(() => window.location.href = '/login', 1000);
+      return;
+    }
+    try {
+      await authFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: productId }) });
+      showToast('Producto agregado al carrito ✓', 'success');
+      updateCartBadge();
+    } catch(err) {
+      showToast(err.message, 'error');
+    }
+  }
+</script>
+</body>
+</html>
