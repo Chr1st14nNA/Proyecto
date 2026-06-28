@@ -284,6 +284,23 @@ Usuario hace clic "Agregar al Carrito"
 | Checkout | `/checkout` | Formulario de dirección + confirmación de pedido |
 | Perfil | `/perfil` | Datos del usuario + historial de pedidos |
 
+### Capturas de Pantalla de la Aplicación
+
+#### 1. Catálogo Principal (Home)
+![Catálogo Principal](public/images/screenshot_home.png)
+
+#### 2. Página de Inicio de Sesión y Registro
+![Login y Registro](public/images/screenshot_login.png)
+
+#### 3. Carrito de Compras
+![Carrito de Compras](public/images/screenshot_cart.png)
+
+#### 4. Proceso de Checkout (Pago y Envío)
+![Proceso de Checkout](public/images/screenshot_checkout.png)
+
+#### 5. Perfil de Usuario e Historial de Pedidos
+![Perfil e Historial](public/images/screenshot_profile.png)
+
 ### Sistema de Diseño
 - **Paleta**: Dark mode (fondo #0a0a12) con acentos violeta (#7c3aed) y cian (#06b6d4)
 - **Tipografía**: Outfit (Google Fonts) — 300/400/600/700/800
